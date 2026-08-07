@@ -1,0 +1,24 @@
+{
+  "name": "cro-ai-toolkit",
+  "version": "1.0.0",
+  "description": "Ferramentas de IA para desenvolvimento CRO, VWO, validação de código e automação de produtividade.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "example": "examples"
+  },
+  "scripts": {
+    "validate": "node projects/validator/src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ntlcs/CRO-AI-Toolkit.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ntlcs/CRO-AI-Toolkit/issues"
+  },
+  "homepage": "https://github.com/ntlcs/CRO-AI-Toolkit#readme"
+}
