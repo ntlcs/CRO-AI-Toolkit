@@ -1,6 +1,7 @@
 function createIssue(rule, severity, lineNumber, lineContent, message) {
   return {
     rule: rule,
+    category: "CSS",
     severity: severity,
     lineNumber: lineNumber,
     lineContent: lineContent.trim(),

@@ -1,6 +1,14 @@
-function createIssue(rule, severity, lineNumber, lineContent, message) {
+function createIssue(
+  rule,
+  category,
+  severity,
+  lineNumber,
+  lineContent,
+  message,
+) {
   return {
     rule: rule,
+    category: category,
     severity: severity,
     lineNumber: lineNumber,
     lineContent: lineContent.trim(),
@@ -20,10 +28,20 @@ function findLineNumber(lines, search) {
   return index + 1;
 }
 
-function addOccurrenceIssue(issues, lines, search, rule, severity, message) {
+function addOccurrenceIssue(
+  issues,
+  lines,
+  search,
+  rule,
+  category,
+  severity,
+  message,
+) {
   lines.forEach(function (line, index) {
     if (line.includes(search)) {
-      issues.push(createIssue(rule, severity, index + 1, line, message));
+      issues.push(
+        createIssue(rule, category, severity, index + 1, line, message),
+      );
     }
   });
 }
@@ -40,6 +58,7 @@ function validateForbiddenSyntax(lines, issues) {
       issues.push(
         createIssue(
           "jquery",
+          "Sintaxe",
           "error",
           lineNumber,
           line,
@@ -52,6 +71,7 @@ function validateForbiddenSyntax(lines, issues) {
       issues.push(
         createIssue(
           "optional-chaining",
+          "Sintaxe",
           "error",
           lineNumber,
           line,
@@ -64,6 +84,7 @@ function validateForbiddenSyntax(lines, issues) {
       issues.push(
         createIssue(
           "nullish-coalescing",
+          "Sintaxe",
           "error",
           lineNumber,
           line,
@@ -81,6 +102,7 @@ function validateForbiddenSyntax(lines, issues) {
       issues.push(
         createIssue(
           "ternary",
+          "Sintaxe",
           "error",
           lineNumber,
           line,
@@ -93,6 +115,7 @@ function validateForbiddenSyntax(lines, issues) {
       issues.push(
         createIssue(
           "console-log",
+          "Sintaxe",
           "warning",
           lineNumber,
           line,
@@ -109,6 +132,7 @@ function validateTimers(lines, issues) {
     lines,
     "setInterval(",
     "set-interval",
+    "Performance",
     "warning",
     "setInterval encontrado. Verifique necessidade e limpeza.",
   );
@@ -118,6 +142,7 @@ function validateTimers(lines, issues) {
     lines,
     "setTimeout(",
     "set-timeout",
+    "Performance",
     "warning",
     "setTimeout encontrado. Confirme se não existe dependência de timing arbitrário.",
   );
@@ -129,6 +154,7 @@ function validateDomManipulation(lines, issues) {
     lines,
     ".innerHTML",
     "inner-html",
+    "DOM",
     "warning",
     "innerHTML encontrado. Verifique segurança e preservação de elementos e eventos.",
   );
@@ -138,6 +164,7 @@ function validateDomManipulation(lines, issues) {
     lines,
     "createElement('style')",
     "css-in-javascript",
+    "DOM",
     "error",
     "Possível injeção de CSS pelo JavaScript encontrada.",
   );
@@ -147,6 +174,7 @@ function validateDomManipulation(lines, issues) {
     lines,
     'createElement("style")',
     "css-in-javascript",
+    "DOM",
     "error",
     "Possível injeção de CSS pelo JavaScript encontrada.",
   );
@@ -155,9 +183,6 @@ function validateDomManipulation(lines, issues) {
 function validateObserver(content, lines, issues) {
   var hasObserver = content.includes("MutationObserver");
   var hasDisconnect = content.includes(".disconnect()");
-  var observesBody =
-    content.includes(".observe(document.body") ||
-    content.includes(".observe(document.documentElement");
 
   if (hasObserver && hasDisconnect === false) {
     var observerLine = findLineNumber(lines, "MutationObserver");
@@ -165,6 +190,7 @@ function validateObserver(content, lines, issues) {
     issues.push(
       createIssue(
         "observer-without-disconnect",
+        "SPA/VWO",
         "warning",
         observerLine,
         lines[observerLine - 1],
@@ -173,19 +199,25 @@ function validateObserver(content, lines, issues) {
     );
   }
 
-  if (hasObserver && observesBody) {
-    var observeLine = findLineNumber(lines, ".observe(");
+  lines.forEach(function (line, index) {
+    var normalizedLine = line.replace(/\s+/g, "");
 
-    issues.push(
-      createIssue(
-        "broad-observer",
-        "warning",
-        observeLine,
-        lines[observeLine - 1],
-        "Observer aplicado em uma área ampla do documento. Verifique performance e escopo.",
-      ),
-    );
-  }
+    if (
+      normalizedLine.includes(".observe(document.body,") ||
+      normalizedLine.includes(".observe(document.documentElement,")
+    ) {
+      issues.push(
+        createIssue(
+          "broad-observer",
+          "SPA/VWO",
+          "warning",
+          index + 1,
+          line,
+          "Observer aplicado em uma área ampla do documento. Verifique performance e escopo.",
+        ),
+      );
+    }
+  });
 }
 
 function validateListeners(content, lines, issues) {
@@ -213,6 +245,7 @@ function validateListeners(content, lines, issues) {
     issues.push(
       createIssue(
         "listener-without-cleanup",
+        "Eventos",
         "warning",
         listenerLine,
         lines[listenerLine - 1],
@@ -227,6 +260,7 @@ function validateListeners(content, lines, issues) {
     issues.push(
       createIssue(
         "resize-listener",
+        "Eventos",
         "warning",
         resizeLine,
         lines[resizeLine - 1],
@@ -251,6 +285,7 @@ function validateAnalytics(content, lines, issues) {
     issues.push(
       createIssue(
         "multiple-data-layer-push",
+        "Analytics",
         "warning",
         dataLayerLine,
         lines[dataLayerLine - 1],
@@ -293,6 +328,7 @@ function validateRepeatedSelectors(lines, issues) {
     issues.push(
       createIssue(
         "repeated-selector",
+        "DOM",
         "warning",
         data.lineNumber,
         data.lineContent,

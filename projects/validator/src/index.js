@@ -6,7 +6,9 @@ var reporter = require("./reporter");
 
 var directoryPath = process.argv[2];
 
-console.log("CRO Validator v0.3 iniciado.");
+console.log("====================================");
+console.log("CRO Validator v0.4");
+console.log("====================================");
 
 if (directoryPath === undefined) {
   console.log("");
@@ -19,10 +21,12 @@ if (directoryPath === undefined) {
 
 try {
   var files = directoryReader.findFiles(directoryPath);
-  var hasErrors = false;
+
+  var totalErrors = 0;
+  var totalWarnings = 0;
 
   console.log("");
-  console.log("Pasta encontrada:");
+  console.log("Pasta:");
   console.log(directoryPath);
 
   if (files.javascript) {
@@ -31,17 +35,17 @@ try {
     var javascriptIssues = validator.validateJavaScript(javascriptData.content);
 
     console.log("");
-    console.log("=== JAVASCRIPT ===");
+    console.log("====================================");
+    console.log("JAVASCRIPT");
+    console.log("====================================");
 
-    reporter.printReport(javascriptData, javascriptIssues);
+    var javascriptResult = reporter.printReport(
+      javascriptData,
+      javascriptIssues,
+    );
 
-    if (
-      javascriptIssues.some(function (issue) {
-        return issue.severity === "error";
-      })
-    ) {
-      hasErrors = true;
-    }
+    totalErrors += javascriptResult.errors;
+    totalWarnings += javascriptResult.warnings;
   } else {
     console.log("");
     console.log("JavaScript não encontrado.");
@@ -53,42 +57,41 @@ try {
     var cssIssues = cssValidator.validateCss(cssData.content);
 
     console.log("");
-    console.log("=== CSS ===");
+    console.log("====================================");
+    console.log("CSS");
+    console.log("====================================");
 
-    reporter.printReport(cssData, cssIssues);
+    var cssResult = reporter.printReport(cssData, cssIssues);
 
-    if (
-      cssIssues.some(function (issue) {
-        return issue.severity === "error";
-      })
-    ) {
-      hasErrors = true;
-    }
+    totalErrors += cssResult.errors;
+    totalWarnings += cssResult.warnings;
   } else {
     console.log("");
     console.log("CSS não encontrado.");
   }
 
-  if (files.info) {
-    console.log("");
-    console.log("infos-teste.md encontrado:");
-    console.log(files.info);
-  } else {
-    console.log("");
-    console.log("infos-teste.md não encontrado.");
-  }
+  console.log("");
+  console.log(
+    "infos-teste.md: " + (files.info ? "ENCONTRADO" : "NÃO ENCONTRADO"),
+  );
 
   console.log("");
-  console.log("==============================");
+  console.log("====================================");
+  console.log("RESULTADO GERAL");
+  console.log("====================================");
 
-  if (hasErrors) {
-    console.log("Resultado geral: REPROVADO");
+  console.log("Erros: " + totalErrors);
+  console.log("Avisos: " + totalWarnings);
+
+  var finalStatus = reporter.getStatus(totalErrors, totalWarnings);
+
+  console.log("");
+  console.log(finalStatus);
+  console.log("====================================");
+
+  if (totalErrors > 0) {
     process.exitCode = 1;
-  } else {
-    console.log("Resultado geral: APROVADO");
   }
-
-  console.log("==============================");
 } catch (error) {
   console.log("");
   console.log("Erro: " + error.message);

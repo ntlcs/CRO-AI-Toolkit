@@ -1,3 +1,19 @@
+var categories = [
+  "Sintaxe",
+  "DOM",
+  "Eventos",
+  "SPA/VWO",
+  "Analytics",
+  "Performance",
+  "CSS",
+];
+
+function getCategoryIssues(issues, category) {
+  return issues.filter(function (issue) {
+    return issue.category === category;
+  });
+}
+
 function printIssue(issue) {
   var label = "AVISO";
 
@@ -5,10 +21,39 @@ function printIssue(issue) {
     label = "ERRO";
   }
 
-  console.log("");
   console.log(label + " | Linha " + issue.lineNumber + " | " + issue.rule);
+
   console.log(issue.message);
   console.log(issue.lineContent);
+  console.log("");
+}
+
+function printCategory(category, issues) {
+  var categoryIssues = getCategoryIssues(issues, category);
+
+  console.log("");
+  console.log("[" + category.toUpperCase() + "]");
+
+  if (categoryIssues.length === 0) {
+    console.log("OK - Nenhuma ocorrência.");
+    return;
+  }
+
+  categoryIssues.forEach(function (issue) {
+    printIssue(issue);
+  });
+}
+
+function getStatus(errors, warnings) {
+  if (errors > 0) {
+    return "REPROVADO";
+  }
+
+  if (warnings > 0) {
+    return "APROVADO COM RESSALVAS";
+  }
+
+  return "APROVADO";
 }
 
 function printReport(fileData, issues) {
@@ -21,26 +66,27 @@ function printReport(fileData, issues) {
   });
 
   console.log("");
-  console.log("Relatório");
   console.log("Arquivo: " + fileData.name);
   console.log("Linhas: " + fileData.totalLines);
-  console.log("Erros: " + errors.length);
-  console.log("Avisos: " + warnings.length);
 
-  issues.forEach(function (issue) {
-    printIssue(issue);
+  categories.forEach(function (category) {
+    printCategory(category, issues);
   });
 
   console.log("");
+  console.log("Resumo do arquivo");
+  console.log("Erros: " + errors.length);
+  console.log("Avisos: " + warnings.length);
+  console.log("Resultado: " + getStatus(errors.length, warnings.length));
 
-  if (errors.length > 0) {
-    console.log("Resultado: REPROVADO");
-    return;
-  }
-
-  console.log("Resultado: APROVADO");
+  return {
+    errors: errors.length,
+    warnings: warnings.length,
+    status: getStatus(errors.length, warnings.length),
+  };
 }
 
 module.exports = {
   printReport: printReport,
+  getStatus: getStatus,
 };
