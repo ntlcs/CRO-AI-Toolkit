@@ -10,6 +10,7 @@ var astValidator = require("./ast-validator");
 var listenerValidator = require("./listener-validator");
 var observerValidator = require("./observer-validator");
 var triggerValidator = require("./trigger-validator");
+var infoValidator = require("./info-validator");
 var reporter = require("./reporter");
 
 function getPrimaryFile(files) {
@@ -145,6 +146,7 @@ function validateTriggerFile(filePath) {
   console.log("Informações: " + triggerResult.infos);
 
   console.log("");
+
   console.log("Resultado: " + triggerResult.status);
 
   result.errors += triggerResult.errors;
@@ -152,6 +154,68 @@ function validateTriggerFile(filePath) {
   result.warnings += triggerResult.warnings;
 
   result.infos += triggerResult.infos;
+
+  return result;
+}
+
+function validateInfoFile(filePath) {
+  var result = {
+    errors: 0,
+    warnings: 0,
+    infos: 0,
+  };
+
+  var content = fs.readFileSync(filePath, "utf8");
+
+  var issues = infoValidator.validateInfo(content);
+
+  console.log("");
+  console.log("====================================");
+  console.log("INFOS");
+  console.log("====================================");
+
+  console.log("");
+  console.log("Arquivo: " + path.basename(filePath));
+
+  console.log("");
+
+  if (issues.length === 0) {
+    console.log("Nenhuma ocorrência.");
+  } else {
+    issues.forEach(function (issue) {
+      console.log(issue.severity.toUpperCase() + " | " + issue.rule);
+
+      console.log(issue.message);
+
+      console.log("");
+    });
+  }
+
+  issues.forEach(function (issue) {
+    if (issue.severity === "error") {
+      result.errors += 1;
+    }
+
+    if (issue.severity === "warning") {
+      result.warnings += 1;
+    }
+
+    if (issue.severity === "info") {
+      result.infos += 1;
+    }
+  });
+
+  var status = reporter.getStatus(result.errors, result.warnings);
+
+  console.log("Erros: " + result.errors);
+
+  console.log("Avisos: " + result.warnings);
+
+  console.log("Informações: " + result.infos);
+
+  console.log("");
+
+  console.log("Resultado: " + status);
 
   return result;
 }
@@ -283,13 +347,18 @@ function validateProject(projectPath) {
 
   console.log(project.projectName);
 
-  console.log("");
+  if (project.info) {
+    var infoResult = validateInfoFile(project.info);
 
-  console.log(
-    "infos-teste.md: " + (project.info ? "ENCONTRADO" : "NÃO ENCONTRADO"),
-  );
+    result.errors += infoResult.errors;
 
-  if (project.info === null) {
+    result.warnings += infoResult.warnings;
+
+    result.infos += infoResult.infos;
+  } else {
+    console.log("");
+    console.log("infos-teste.md: NÃO ENCONTRADO");
+
     result.warnings += 1;
   }
 
@@ -336,7 +405,7 @@ var inputPath = process.argv[2];
 
 console.log("====================================");
 
-console.log("CRO Validator v0.7");
+console.log("CRO Validator v0.8");
 
 console.log("====================================");
 

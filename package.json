@@ -1,6 +1,6 @@
 {
   "name": "cro-ai-toolkit",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Ferramentas de IA para desenvolvimento CRO, VWO, validação de código e automação de produtividade.",
   "main": "index.js",
   "directories": {
@@ -14,7 +14,8 @@
     "trigger:ast:test": "node projects/validator/src/trigger-ast-test.js",
     "trigger:scan:test": "node projects/validator/src/trigger-scanner-test.js",
     "trigger:rules:test": "node projects/validator/src/trigger-rules-test.js",
-    "trigger:validate:test": "node projects/validator/src/trigger-validator-test.js"
+    "trigger:validate:test": "node projects/validator/src/trigger-validator-test.js",
+    "info:validate:test": "node projects/validator/src/info-validator-test.js"
   },
   "repository": {
     "type": "git",
