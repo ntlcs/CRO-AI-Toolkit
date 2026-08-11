@@ -1,6 +1,12 @@
 var fs = require("fs");
 var path = require("path");
 
+function getFilesByExtension(files, extension) {
+  return files.filter(function (file) {
+    return path.extname(file).toLowerCase() === extension;
+  });
+}
+
 function findFiles(directoryPath) {
   if (fs.existsSync(directoryPath) === false) {
     throw new Error("Diretório não encontrado.");
@@ -14,30 +20,26 @@ function findFiles(directoryPath) {
 
   var files = fs.readdirSync(directoryPath);
 
-  var result = {
-    directory: directoryPath,
-    javascript: null,
-    css: null,
-    info: null,
-  };
+  var javascriptFiles = getFilesByExtension(files, ".js");
+  var cssFiles = getFilesByExtension(files, ".css");
 
-  files.forEach(function (file) {
-    var extension = path.extname(file).toLowerCase();
-
-    if (extension === ".js") {
-      result.javascript = path.join(directoryPath, file);
-    }
-
-    if (extension === ".css") {
-      result.css = path.join(directoryPath, file);
-    }
-
-    if (file.toLowerCase() === "infos-teste.md") {
-      result.info = path.join(directoryPath, file);
-    }
+  var infoFile = files.find(function (file) {
+    return file.toLowerCase() === "infos-teste.md";
   });
 
-  return result;
+  var directoryName = path.basename(directoryPath);
+
+  return {
+    directory: directoryPath,
+    directoryName: directoryName,
+    javascriptFiles: javascriptFiles.map(function (file) {
+      return path.join(directoryPath, file);
+    }),
+    cssFiles: cssFiles.map(function (file) {
+      return path.join(directoryPath, file);
+    }),
+    info: infoFile ? path.join(directoryPath, infoFile) : null,
+  };
 }
 
 module.exports = {

@@ -126,6 +126,84 @@ function validateForbiddenSyntax(lines, issues) {
   });
 }
 
+function validateNegation(lines, issues) {
+  lines.forEach(function (line, index) {
+    var sanitized = line.replace(/!==/g, "").replace(/!=/g, "");
+
+    if (sanitized.includes("!")) {
+      issues.push(
+        createIssue(
+          "negation-operator",
+          "Sintaxe",
+          "error",
+          index + 1,
+          line,
+          "Operador de negação com exclamação não é permitido.",
+        ),
+      );
+    }
+  });
+}
+
+function validateComments(lines, issues) {
+  var insideBlockComment = false;
+
+  lines.forEach(function (line, index) {
+    var trimmedLine = line.trim();
+
+    if (insideBlockComment) {
+      issues.push(
+        createIssue(
+          "comment",
+          "Sintaxe",
+          "warning",
+          index + 1,
+          line,
+          "Comentário encontrado.",
+        ),
+      );
+
+      if (trimmedLine.includes("*/")) {
+        insideBlockComment = false;
+      }
+
+      return;
+    }
+
+    if (trimmedLine.startsWith("/*")) {
+      issues.push(
+        createIssue(
+          "comment",
+          "Sintaxe",
+          "warning",
+          index + 1,
+          line,
+          "Comentário encontrado.",
+        ),
+      );
+
+      if (trimmedLine.includes("*/") === false) {
+        insideBlockComment = true;
+      }
+
+      return;
+    }
+
+    if (trimmedLine.startsWith("//") || trimmedLine.includes(" //")) {
+      issues.push(
+        createIssue(
+          "comment",
+          "Sintaxe",
+          "warning",
+          index + 1,
+          line,
+          "Comentário encontrado.",
+        ),
+      );
+    }
+  });
+}
+
 function validateTimers(lines, issues) {
   addOccurrenceIssue(
     issues,
@@ -180,97 +258,7 @@ function validateDomManipulation(lines, issues) {
   );
 }
 
-function validateObserver(content, lines, issues) {
-  var hasObserver = content.includes("MutationObserver");
-  var hasDisconnect = content.includes(".disconnect()");
-
-  if (hasObserver && hasDisconnect === false) {
-    var observerLine = findLineNumber(lines, "MutationObserver");
-
-    issues.push(
-      createIssue(
-        "observer-without-disconnect",
-        "SPA/VWO",
-        "warning",
-        observerLine,
-        lines[observerLine - 1],
-        "MutationObserver encontrado sem disconnect aparente.",
-      ),
-    );
-  }
-
-  lines.forEach(function (line, index) {
-    var normalizedLine = line.replace(/\s+/g, "");
-
-    if (
-      normalizedLine.includes(".observe(document.body,") ||
-      normalizedLine.includes(".observe(document.documentElement,")
-    ) {
-      issues.push(
-        createIssue(
-          "broad-observer",
-          "SPA/VWO",
-          "warning",
-          index + 1,
-          line,
-          "Observer aplicado em uma área ampla do documento. Verifique performance e escopo.",
-        ),
-      );
-    }
-  });
-}
-
-function validateListeners(content, lines, issues) {
-  var addCount = 0;
-  var removeCount = 0;
-  var resizeCount = 0;
-
-  lines.forEach(function (line) {
-    if (line.includes("addEventListener(")) {
-      addCount += 1;
-    }
-
-    if (line.includes("removeEventListener(")) {
-      removeCount += 1;
-    }
-
-    if (line.includes("addEventListener(") && line.includes("resize")) {
-      resizeCount += 1;
-    }
-  });
-
-  if (addCount > 0 && removeCount === 0) {
-    var listenerLine = findLineNumber(lines, "addEventListener(");
-
-    issues.push(
-      createIssue(
-        "listener-without-cleanup",
-        "Eventos",
-        "warning",
-        listenerLine,
-        lines[listenerLine - 1],
-        "Listeners encontrados sem removeEventListener aparente.",
-      ),
-    );
-  }
-
-  if (resizeCount > 0) {
-    var resizeLine = findLineNumber(lines, "resize");
-
-    issues.push(
-      createIssue(
-        "resize-listener",
-        "Eventos",
-        "warning",
-        resizeLine,
-        lines[resizeLine - 1],
-        "Listener de resize encontrado. Confirme necessidade, limpeza e comportamento entre breakpoints.",
-      ),
-    );
-  }
-}
-
-function validateAnalytics(content, lines, issues) {
+function validateAnalytics(lines, issues) {
   var pushCount = 0;
 
   lines.forEach(function (line) {
@@ -347,11 +335,11 @@ function validateJavaScript(content) {
   var lines = content.split(/\r?\n/);
 
   validateForbiddenSyntax(lines, issues);
+  validateNegation(lines, issues);
+  validateComments(lines, issues);
   validateTimers(lines, issues);
   validateDomManipulation(lines, issues);
-  validateObserver(content, lines, issues);
-  validateListeners(content, lines, issues);
-  validateAnalytics(content, lines, issues);
+  validateAnalytics(lines, issues);
   validateRepeatedSelectors(lines, issues);
 
   return issues;

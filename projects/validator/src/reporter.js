@@ -1,4 +1,5 @@
 var categories = [
+  "Estrutura",
   "Sintaxe",
   "DOM",
   "Eventos",
