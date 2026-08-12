@@ -11,7 +11,42 @@ var listenerValidator = require("./listener-validator");
 var observerValidator = require("./observer-validator");
 var triggerValidator = require("./trigger-validator");
 var infoValidator = require("./info-validator");
+var crossValidator = require("./cross-validator");
 var reporter = require("./reporter");
+
+function createResult() {
+  return {
+    errors: 0,
+    warnings: 0,
+    infos: 0,
+  };
+}
+
+function addResult(target, source) {
+  target.errors += source.errors;
+  target.warnings += source.warnings;
+  target.infos += source.infos;
+}
+
+function countIssues(issues) {
+  var result = createResult();
+
+  issues.forEach(function (issue) {
+    if (issue.severity === "error") {
+      result.errors += 1;
+    }
+
+    if (issue.severity === "warning") {
+      result.warnings += 1;
+    }
+
+    if (issue.severity === "info") {
+      result.infos += 1;
+    }
+  });
+
+  return result;
+}
 
 function getPrimaryFile(files) {
   var preferred = files.find(function (filePath) {
@@ -37,12 +72,21 @@ function isVariantDirectory(directoryPath) {
   return /^V\d+$/.test(directoryName);
 }
 
+function printIssues(issues) {
+  if (issues.length === 0) {
+    console.log("Nenhuma ocorrência.");
+    return;
+  }
+
+  issues.forEach(function (issue) {
+    console.log(issue.severity.toUpperCase() + " | " + issue.rule);
+    console.log(issue.message);
+    console.log("");
+  });
+}
+
 function validateJavaScriptFile(filePath, label) {
-  var result = {
-    errors: 0,
-    warnings: 0,
-    infos: 0,
-  };
+  var result = createResult();
 
   var javascriptData = fileReader.readFile(filePath);
 
@@ -78,7 +122,6 @@ function validateJavaScriptFile(filePath, label) {
   var javascriptResult = reporter.printReport(javascriptData, javascriptIssues);
 
   result.errors += javascriptResult.errors;
-
   result.warnings += javascriptResult.warnings;
 
   if (javascriptResult.infos !== undefined) {
@@ -91,7 +134,6 @@ function validateJavaScriptFile(filePath, label) {
     console.log("AST: OK");
   } else {
     console.log("AST: FALHA");
-
     console.log(
       "Demais validações JavaScript ignoradas devido ao erro de sintaxe.",
     );
@@ -101,11 +143,7 @@ function validateJavaScriptFile(filePath, label) {
 }
 
 function validateTriggerFile(filePath) {
-  var result = {
-    errors: 0,
-    warnings: 0,
-    infos: 0,
-  };
+  var result = createResult();
 
   var triggerData = fileReader.readFile(filePath);
 
@@ -127,47 +165,31 @@ function validateTriggerFile(filePath) {
 
   console.log("");
 
-  if (triggerResult.issues.length === 0) {
-    console.log("Nenhuma ocorrência.");
-  } else {
-    triggerResult.issues.forEach(function (issue) {
-      console.log(issue.severity.toUpperCase() + " | " + issue.rule);
-
-      console.log(issue.message);
-
-      console.log("");
-    });
-  }
+  printIssues(triggerResult.issues);
 
   console.log("Erros: " + triggerResult.errors);
-
   console.log("Avisos: " + triggerResult.warnings);
-
   console.log("Informações: " + triggerResult.infos);
 
   console.log("");
-
   console.log("Resultado: " + triggerResult.status);
 
   result.errors += triggerResult.errors;
-
   result.warnings += triggerResult.warnings;
-
   result.infos += triggerResult.infos;
 
-  return result;
+  return {
+    summary: result,
+    validation: triggerResult,
+  };
 }
 
 function validateInfoFile(filePath) {
-  var result = {
-    errors: 0,
-    warnings: 0,
-    infos: 0,
-  };
-
   var content = fs.readFileSync(filePath, "utf8");
 
   var issues = infoValidator.validateInfo(content);
+
+  var result = countIssues(issues);
 
   console.log("");
   console.log("====================================");
@@ -179,53 +201,55 @@ function validateInfoFile(filePath) {
 
   console.log("");
 
-  if (issues.length === 0) {
-    console.log("Nenhuma ocorrência.");
-  } else {
-    issues.forEach(function (issue) {
-      console.log(issue.severity.toUpperCase() + " | " + issue.rule);
-
-      console.log(issue.message);
-
-      console.log("");
-    });
-  }
-
-  issues.forEach(function (issue) {
-    if (issue.severity === "error") {
-      result.errors += 1;
-    }
-
-    if (issue.severity === "warning") {
-      result.warnings += 1;
-    }
-
-    if (issue.severity === "info") {
-      result.infos += 1;
-    }
-  });
+  printIssues(issues);
 
   var status = reporter.getStatus(result.errors, result.warnings);
 
   console.log("Erros: " + result.errors);
-
   console.log("Avisos: " + result.warnings);
-
   console.log("Informações: " + result.infos);
 
   console.log("");
+  console.log("Resultado: " + status);
 
+  return {
+    summary: result,
+    content: content,
+  };
+}
+
+function validateCrossProject(project, infoContent, triggerResults) {
+  var result = createResult();
+
+  var infoData = infoValidator.extractInfo(infoContent);
+
+  var issues = crossValidator.validateCross(project, infoData, triggerResults);
+
+  result = countIssues(issues);
+
+  console.log("");
+  console.log("====================================");
+  console.log("CROSS VALIDATOR");
+  console.log("====================================");
+
+  console.log("");
+
+  printIssues(issues);
+
+  var status = reporter.getStatus(result.errors, result.warnings);
+
+  console.log("Erros: " + result.errors);
+  console.log("Avisos: " + result.warnings);
+  console.log("Informações: " + result.infos);
+
+  console.log("");
   console.log("Resultado: " + status);
 
   return result;
 }
 
 function validateCssFile(filePath) {
-  var result = {
-    errors: 0,
-    warnings: 0,
-    infos: 0,
-  };
+  var result = createResult();
 
   var cssData = fileReader.readFile(filePath);
 
@@ -239,7 +263,6 @@ function validateCssFile(filePath) {
   var cssResult = reporter.printReport(cssData, cssIssues);
 
   result.errors += cssResult.errors;
-
   result.warnings += cssResult.warnings;
 
   if (cssResult.infos !== undefined) {
@@ -250,11 +273,7 @@ function validateCssFile(filePath) {
 }
 
 function validateVariant(directoryPath, options) {
-  var result = {
-    errors: 0,
-    warnings: 0,
-    infos: 0,
-  };
+  var result = createResult();
 
   var files = directoryReader.findFiles(directoryPath);
 
@@ -281,7 +300,6 @@ function validateVariant(directoryPath, options) {
   var structureResult = reporter.printReport(structureData, structureIssues);
 
   result.errors += structureResult.errors;
-
   result.warnings += structureResult.warnings;
 
   if (structureResult.infos !== undefined) {
@@ -293,7 +311,6 @@ function validateVariant(directoryPath, options) {
 
     console.log("");
     console.log("JavaScript selecionado:");
-
     console.log(path.basename(primaryJavaScript));
 
     var javascriptResult = validateJavaScriptFile(
@@ -301,11 +318,7 @@ function validateVariant(directoryPath, options) {
       "JAVASCRIPT",
     );
 
-    result.errors += javascriptResult.errors;
-
-    result.warnings += javascriptResult.warnings;
-
-    result.infos += javascriptResult.infos;
+    addResult(result, javascriptResult);
   }
 
   if (files.cssFiles.length > 0) {
@@ -313,16 +326,11 @@ function validateVariant(directoryPath, options) {
 
     console.log("");
     console.log("CSS selecionado:");
-
     console.log(path.basename(primaryCss));
 
     var cssResult = validateCssFile(primaryCss);
 
-    result.errors += cssResult.errors;
-
-    result.warnings += cssResult.warnings;
-
-    result.infos += cssResult.infos;
+    addResult(result, cssResult);
   } else {
     console.log("");
     console.log("CSS não encontrado.");
@@ -332,13 +340,13 @@ function validateVariant(directoryPath, options) {
 }
 
 function validateProject(projectPath) {
-  var result = {
-    errors: 0,
-    warnings: 0,
-    infos: 0,
-  };
+  var result = createResult();
 
   var project = projectReader.readProject(projectPath);
+
+  var infoContent = null;
+
+  var triggerResults = [];
 
   console.log("");
   console.log("####################################");
@@ -350,11 +358,9 @@ function validateProject(projectPath) {
   if (project.info) {
     var infoResult = validateInfoFile(project.info);
 
-    result.errors += infoResult.errors;
+    infoContent = infoResult.content;
 
-    result.warnings += infoResult.warnings;
-
-    result.infos += infoResult.infos;
+    addResult(result, infoResult.summary);
   } else {
     console.log("");
     console.log("infos-teste.md: NÃO ENCONTRADO");
@@ -366,15 +372,33 @@ function validateProject(projectPath) {
     project.triggers.forEach(function (triggerPath) {
       var triggerResult = validateTriggerFile(triggerPath);
 
-      result.errors += triggerResult.errors;
+      triggerResults.push(triggerResult.validation);
 
-      result.warnings += triggerResult.warnings;
-
-      result.infos += triggerResult.infos;
+      addResult(result, triggerResult.summary);
     });
   } else {
     console.log("");
     console.log("Trigger: NÃO ENCONTRADA");
+  }
+
+  if (infoContent !== null) {
+    var crossResult = validateCrossProject(
+      project,
+      infoContent,
+      triggerResults,
+    );
+
+    addResult(result, crossResult);
+  } else {
+    console.log("");
+    console.log("====================================");
+    console.log("CROSS VALIDATOR");
+    console.log("====================================");
+
+    console.log("");
+    console.log(
+      "Validação cruzada ignorada porque infos-teste.md não foi encontrado.",
+    );
   }
 
   if (project.variants.length === 0) {
@@ -391,11 +415,7 @@ function validateProject(projectPath) {
       requireInfo: false,
     });
 
-    result.errors += variantResult.errors;
-
-    result.warnings += variantResult.warnings;
-
-    result.infos += variantResult.infos;
+    addResult(result, variantResult);
   });
 
   return result;
@@ -404,9 +424,7 @@ function validateProject(projectPath) {
 var inputPath = process.argv[2];
 
 console.log("====================================");
-
-console.log("CRO Validator v0.8");
-
+console.log("CRO Validator v0.9");
 console.log("====================================");
 
 if (inputPath === undefined) {
@@ -438,15 +456,11 @@ try {
 
   console.log("");
   console.log("====================================");
-
   console.log("RESULTADO GERAL");
-
   console.log("====================================");
 
   console.log("Erros: " + totalResult.errors);
-
   console.log("Avisos: " + totalResult.warnings);
-
   console.log("Informações: " + totalResult.infos);
 
   var finalStatus = reporter.getStatus(
@@ -464,7 +478,6 @@ try {
   }
 } catch (error) {
   console.log("");
-
   console.log("Erro: " + error.message);
 
   process.exit(1);

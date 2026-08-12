@@ -139,9 +139,30 @@ function findField(lines, field, fields) {
   }
 
   return {
+    key: field.key,
+    label: field.label,
     lineNumber: index + 1,
     value: getFieldValue(lines, index, fields),
   };
+}
+
+function extractInfo(content) {
+  var lines = getLines(content);
+  var fields = getFields();
+  var data = {};
+
+  fields.forEach(function (field) {
+    var result = findField(lines, field, fields);
+
+    if (result === null) {
+      data[field.key] = null;
+      return;
+    }
+
+    data[field.key] = result.value;
+  });
+
+  return data;
 }
 
 function validateField(lines, config, fields, issues) {
@@ -186,9 +207,7 @@ function validateField(lines, config, fields, issues) {
 
 function validateInfo(content) {
   var lines = getLines(content);
-
   var fields = getFields();
-
   var issues = [];
 
   fields.forEach(function (field) {
@@ -200,4 +219,5 @@ function validateInfo(content) {
 
 module.exports = {
   validateInfo: validateInfo,
+  extractInfo: extractInfo,
 };
