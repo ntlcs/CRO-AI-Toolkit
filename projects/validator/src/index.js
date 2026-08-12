@@ -1,5 +1,6 @@
 var fs = require("fs");
 var path = require("path");
+var packageInfo = require("../../../package.json");
 var directoryReader = require("./directory-reader");
 var projectReader = require("./project-reader");
 var fileReader = require("./file-reader");
@@ -219,13 +220,11 @@ function validateInfoFile(filePath) {
 }
 
 function validateCrossProject(project, infoContent, triggerResults) {
-  var result = createResult();
-
   var infoData = infoValidator.extractInfo(infoContent);
 
   var issues = crossValidator.validateCross(project, infoData, triggerResults);
 
-  result = countIssues(issues);
+  var result = countIssues(issues);
 
   console.log("");
   console.log("====================================");
@@ -292,18 +291,18 @@ function validateVariant(directoryPath, options) {
     requireInfo: requireInfo,
   });
 
-  var structureData = {
-    name: files.directoryName,
-    totalLines: 0,
-  };
+  var structureResult = countIssues(structureIssues);
 
-  var structureResult = reporter.printReport(structureData, structureIssues);
+  addResult(result, structureResult);
 
-  result.errors += structureResult.errors;
-  result.warnings += structureResult.warnings;
+  if (structureIssues.length > 0) {
+    console.log("");
+    console.log("====================================");
+    console.log("ESTRUTURA");
+    console.log("====================================");
+    console.log("");
 
-  if (structureResult.infos !== undefined) {
-    result.infos += structureResult.infos;
+    printIssues(structureIssues);
   }
 
   if (files.javascriptFiles.length > 0) {
@@ -333,7 +332,7 @@ function validateVariant(directoryPath, options) {
     addResult(result, cssResult);
   } else {
     console.log("");
-    console.log("CSS não encontrado.");
+    console.log("CSS: NÃO ENCONTRADO");
   }
 
   return result;
@@ -352,7 +351,6 @@ function validateProject(projectPath) {
   console.log("####################################");
   console.log("TESTE");
   console.log("####################################");
-
   console.log(project.projectName);
 
   if (project.info) {
@@ -363,7 +361,7 @@ function validateProject(projectPath) {
     addResult(result, infoResult.summary);
   } else {
     console.log("");
-    console.log("infos-teste.md: NÃO ENCONTRADO");
+    console.log("INFOS: NÃO ENCONTRADO");
 
     result.warnings += 1;
   }
@@ -378,7 +376,7 @@ function validateProject(projectPath) {
     });
   } else {
     console.log("");
-    console.log("Trigger: NÃO ENCONTRADA");
+    console.log("TRIGGER: NÃO ENCONTRADA");
   }
 
   if (infoContent !== null) {
@@ -424,7 +422,7 @@ function validateProject(projectPath) {
 var inputPath = process.argv[2];
 
 console.log("====================================");
-console.log("CRO Validator v0.9");
+console.log("CRO Validator v" + packageInfo.version);
 console.log("====================================");
 
 if (inputPath === undefined) {
@@ -470,7 +468,6 @@ try {
 
   console.log("");
   console.log(finalStatus);
-
   console.log("====================================");
 
   if (totalResult.errors > 0) {
