@@ -173,6 +173,13 @@ Analise:
 - duplicação;
 - dependência de DOM;
 - dependência de timing;
+
+- dependência de estado visual para impedir ações;
+- sincronização entre estado visual e estado funcional;
+- possibilidade de interação antes da conclusão da variação;
+- race conditions entre código da página e código da variação;
+- habilitação prematura de CTA ou elemento interativo;
+
 - preview;
 - publicação;
 - impacto entre variantes;
@@ -307,6 +314,29 @@ Tente identificar formas de quebrar a configuração:
 - retornar para rota anterior;
 - evento disparar antes da variação.
 
+- preencher formulários lentamente;
+- preencher formulários rapidamente;
+- clicar imediatamente após preencher o último campo;
+- usar Tab durante o preenchimento;
+- usar Enter imediatamente após o preenchimento;
+- tentar clicar em CTA durante mudança de estado;
+- tentar executar uma ação antes da liberação visual da próxima etapa;
+- verificar se elemento oculto continua clicável;
+- verificar se elemento oculto continua acessível por teclado;
+- verificar se CTA visualmente oculto ou bloqueado continua funcional;
+- verificar se CTA aparece ou é habilitado antes das pré-condições;
+- trocar rapidamente entre radios, tabs, opções ou estados;
+- retornar para um estado anteriormente visitado;
+- provocar sequência rápida de input, change, blur e clique;
+- tentar avançar enquanto aria-invalid, disabled, checked ou classes ainda estão sendo atualizados;
+- testar comportamento durante setTimeout, requestAnimationFrame ou atualização assíncrona;
+- procurar janela intermediária em que uma ação inválida possa ser executada;
+- comparar estado visual com estado funcional em cada transição relevante.
+
+Quando existir fluxo progressivo, formulário, validação ou habilitação condicional de ações, tentar deliberadamente pular etapas e executar a próxima ação antes da conclusão da etapa atual.
+
+Não considerar ocultação visual como bloqueio funcional. Validar separadamente visibilidade, foco, teclado, estado disabled e execução real da ação.
+
 ## 9. Correções recomendadas
 
 Liste objetivamente:
@@ -320,6 +350,10 @@ Liste objetivamente:
 - ajuste em duplicação;
 - ajuste em timing.
 
+- ajuste de sincronização entre estado visual e funcional;
+- bloqueio funcional de ações prematuras;
+- proteção contra race conditions.
+
 Não sugerir alterações fora do escopo.
 
 ## 10. Trigger completa corrigida
@@ -327,6 +361,7 @@ Não sugerir alterações fora do escopo.
 Quando houver trigger customizada com problemas, entregue todo o código final corrigido em um único bloco:
 
 ```javascript
+
 ```
 
 Regras:
@@ -376,19 +411,50 @@ Gerar itens específicos para:
 - timing;
 - carregamento tardio.
 
+- preenchimento rápido;
+- clique imediato após preenchimento;
+- Tab e Enter;
+- estados intermediários;
+- CTA antes das pré-condições;
+- elementos ocultos ainda acionáveis;
+- sincronização visual e funcional;
+- troca rápida entre estados;
+- tentativa de pular etapas;
+- race conditions;
+- comportamento durante atualizações assíncronas.
+
+### Regra crítica para fluxos condicionais
+
+Sempre que uma ação depender de uma condição anterior, validar duas dimensões separadamente:
+
+1. Estado visual: o usuário consegue ver ou acessar visualmente a ação?
+2. Estado funcional: o usuário consegue executar a ação?
+
+Nunca assumir que esconder um elemento com CSS impede sua execução.
+
+Para CTAs, botões, links e controles condicionais, tentar executar a ação:
+
+- antes da condição necessária;
+- durante a mudança de estado;
+- imediatamente após a interação anterior;
+- via mouse;
+- via teclado.
+
+Se uma ação puder ser executada antes de sua pré-condição, classificar como problema funcional, mesmo que a interface visual pareça correta.
+
 ## 12. Resultado final
 
 Finalize com esta tabela:
 
-| Área | Classificação | Correção necessária |
-|---|---|---|
-| Pages | | |
-| Variations & Traffic | | |
-| Targeting | | |
-| Trigger | | |
-| Analytics/GTM | | |
-| SPA | | |
-| Execução geral | | |
+| Área                 | Classificação | Correção necessária |
+| -------------------- | ------------- | ------------------- |
+| Pages                |               |                     |
+| Variations & Traffic |               |                     |
+| Targeting            |               |                     |
+| Trigger              |               |                     |
+| Analytics/GTM        |               |                     |
+| SPA                  |               |                     |
+| Execução geral       |               |                     |
 
 ## 13. Status geral
 
