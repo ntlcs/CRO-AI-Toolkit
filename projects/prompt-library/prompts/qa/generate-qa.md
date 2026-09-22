@@ -192,6 +192,47 @@ Criar cenários para validar:
 - links externos;
 - componentes relacionados.
 
+## 4.1. Estados intermediários, timing e interação rápida
+
+Sempre que o comportamento da variação depender de preenchimento, validação, mudança de estado, eventos, atributos do DOM, exibição progressiva ou habilitação de ações, criar cenários específicos para validar estados intermediários.
+
+Validar, quando aplicável:
+
+- preenchimento lento dos campos;
+- preenchimento rápido dos campos;
+- clique imediatamente após preencher o último campo;
+- sequência rápida entre input, change, blur e clique;
+- uso de Tab para avançar pelos campos;
+- uso de Enter durante e após o preenchimento;
+- múltiplos cliques rápidos;
+- troca rápida entre radios, tabs, opções ou estados;
+- interação enquanto a interface está mudando de estado;
+- retorno para um estado anteriormente visitado;
+- comportamento durante validações nativas da página;
+- comportamento enquanto atributos como aria-invalid, disabled, checked ou classes estão sendo atualizados;
+- dependência de setTimeout, requestAnimationFrame, MutationObserver ou outro mecanismo assíncrono;
+- possibilidade de race condition entre código da página e código da variação.
+
+Para elementos condicionais, validar separadamente estado visual e estado funcional.
+
+Confirmar:
+
+- elemento oculto não permanece clicável;
+- elemento oculto não permanece acessível por Tab quando isso não for esperado;
+- CTA não pode ser acionado antes das pré-condições necessárias;
+- botão visualmente bloqueado também está funcionalmente bloqueado;
+- botão funcionalmente liberado está visualmente disponível;
+- campos obrigatórios não podem ser ignorados devido a timing;
+- ações não podem ocorrer antes da conclusão da etapa anterior;
+- estado visual e estado funcional permanecem sincronizados;
+- não existe janela intermediária que permita executar uma ação inválida.
+
+Quando houver exibição progressiva de etapas, tentar deliberadamente avançar para a próxima etapa antes da liberação esperada.
+
+Quando houver setTimeout ou dependência de atualização posterior do DOM, criar pelo menos um cenário tentando executar a próxima ação antes da conclusão dessa atualização.
+
+Não considerar display none, visibility hidden, opacity, remoção visual ou mudança de classe como garantia suficiente de bloqueio funcional. Validar também foco, teclado, estado disabled e execução real da ação.
+
 ## 5. Desktop
 
 Validar, quando aplicável:
@@ -384,6 +425,12 @@ Exemplo:
 - targeting executado corretamente;
 - regressões não identificadas.
 
+- nenhuma ação pode ser executada antes de suas pré-condições;
+- estados visuais e funcionais devem permanecer sincronizados;
+- elementos ocultos ou indisponíveis não podem permanecer acionáveis;
+- interações rápidas não podem permitir pular etapas;
+- não podem existir race conditions perceptíveis durante o fluxo principal;
+
 ## 15. Evidências recomendadas
 
 Liste as evidências que devem ser registradas:
@@ -405,18 +452,18 @@ Liste as evidências que devem ser registradas:
 
 Finalize com uma tabela:
 
-| Área | Status esperado | Evidência |
-|---|---|---|
-| VWO Pages | | |
-| Variação | | |
-| Targeting | | |
-| Desktop | | |
-| Mobile | | |
-| SPA | | |
-| Analytics/GTM | | |
-| Acessibilidade | | |
-| Performance | | |
-| Regressões | | |
+| Área           | Status esperado | Evidência |
+| -------------- | --------------- | --------- |
+| VWO Pages      |                 |           |
+| Variação       |                 |           |
+| Targeting      |                 |           |
+| Desktop        |                 |           |
+| Mobile         |                 |           |
+| SPA            |                 |           |
+| Analytics/GTM  |                 |           |
+| Acessibilidade |                 |           |
+| Performance    |                 |           |
+| Regressões     |                 |           |
 
 ---
 
@@ -435,6 +482,11 @@ Finalize com uma tabela:
 - Incluir validação de analytics quando houver eventos.
 - Incluir regressões em componentes relacionados.
 - Tentar encontrar formas de quebrar o teste.
+
+- Quando houver fluxo progressivo, formulário, validação ou mudança de estado, incluir testes de interação rápida e estados intermediários.
+- Validar separadamente visibilidade e disponibilidade funcional de elementos interativos.
+- Quando houver setTimeout ou outra dependência assíncrona, tentar executar a ação seguinte antes da atualização esperada.
+- Tentar deliberadamente pular etapas obrigatórias do fluxo.
 
 ---
 
