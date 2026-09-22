@@ -13,6 +13,7 @@ function normalizeText(value) {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/^#+\s*/, "")
     .toLowerCase()
     .trim();
 }
@@ -42,6 +43,18 @@ function getFields() {
       key: "url",
       label: "URL onde será executado",
       aliases: ["URL onde será executado"],
+    },
+    {
+      key: "alternative-routes",
+      label: "Rotas alternativas",
+      aliases: ["Rotas alternativas"],
+      optional: true,
+    },
+    {
+      key: "qa-entry-urls",
+      label: "URLs de entrada para QA",
+      aliases: ["URLs de entrada para QA"],
+      optional: true,
     },
     {
       key: "figma",
@@ -205,6 +218,42 @@ function validateField(lines, config, fields, issues) {
   );
 }
 
+function validateQaRoutes(content, issues) {
+  var data = extractInfo(content);
+
+  if (data["alternative-routes"] === null && data["qa-entry-urls"] === null) {
+    issues.push(
+      createIssue(
+        "qa-entry-routes-not-declared",
+        "info",
+        "Nenhuma rota alternativa ou URL de entrada para QA foi documentada. Confirme acessos por cards, banners, CTAs, redirects e query parameters.",
+      ),
+    );
+
+    return;
+  }
+
+  if (data["alternative-routes"] !== null) {
+    issues.push(
+      createIssue(
+        "qa-alternative-routes-declared",
+        "info",
+        "Rotas alternativas foram documentadas para validação de QA.",
+      ),
+    );
+  }
+
+  if (data["qa-entry-urls"] !== null) {
+    issues.push(
+      createIssue(
+        "qa-entry-urls-declared",
+        "info",
+        "URLs de entrada foram documentadas para validação de QA.",
+      ),
+    );
+  }
+}
+
 function validateInfo(content) {
   var lines = getLines(content);
   var fields = getFields();
@@ -213,6 +262,8 @@ function validateInfo(content) {
   fields.forEach(function (field) {
     validateField(lines, field, fields, issues);
   });
+
+  validateQaRoutes(content, issues);
 
   return issues;
 }
